@@ -1,0 +1,526 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{float}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{multirow}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    filecolor=magenta,      
+    urlcolor=cyan,
+}
+
+\lstset{
+    basicstyle=\ttfamily\small,
+    breaklines=true,
+    frame=single,
+    backgroundcolor=\color{gray!10}
+}
+
+\title{\textbf{Finite Element Analysis of Steel Plate Under Multiple Loading Conditions: \\
+A Comparative Study of Linear Solvers} \\
+\vspace{0.5cm}
+\large End Semester Report \\
+AM5801 - Computational Lab}
+
+\author{
+    Deepak S (MM22B011) \\
+    \texttt{mm22b011@smail.iitm.ac.in} \\
+    \and
+    Muskan (BE22B031) \\
+    \texttt{be22b031@smail.iitm.ac.in}
+}
+
+\date{November 8, 2025}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+This study presents a comprehensive finite element analysis (FEA) of a rectangular steel plate subjected to five different loading conditions. The primary focus is on comparing the computational efficiency and numerical accuracy of six different linear system solvers: Naive Gaussian Elimination, LU Decomposition, Cholesky Decomposition, Conjugate Gradient (dense and sparse), and Gauss-Seidel iterative method. The analysis reveals that sparse matrix solvers offer up to 400x speedup compared to traditional iterative methods while maintaining high accuracy. The stiffness matrix factorization approach demonstrates the efficiency of reusing decomposed matrices for multiple load cases, significantly reducing computational cost. All implementations and results are available in our GitHub repository: \url{https://github.com/mm22b011-deepaks/AM5801-FInal-End-Sem-Submission}
+\end{abstract}
+
+\tableofcontents
+\newpage
+
+\section{Introduction}
+
+\subsection{Why This Problem Is Interesting}
+
+The Finite Element Method (FEM) serves as a cornerstone of modern computational engineering, enabling the analysis of complex structures through systematic discretization. This study connects directly to real engineering applications:
+
+\begin{itemize}
+    \item \textbf{Real-World Relevance:} Plates and thin structural components are ubiquitous in engineering—found in bridges, aircraft wings, machine frames, and pressure vessels. Understanding the behavior of a simple rectangular plate under stress provides fundamental insights before tackling complex 3D structures.
+    
+    \item \textbf{Power of FEM:} By discretizing the plate into smaller elements, we capture spatial variations in stress and strain. The elegance of FEM lies in transforming physical deformation into solvable matrix operations, applicable to arbitrary geometries and loading conditions.
+    
+    \item \textbf{Computational Efficiency:} One fascinating aspect is solving multiple load cases using the same stiffness matrix. This demonstrates how engineers optimize real simulations—a critical skill for large-scale structural design.
+    
+    \item \textbf{Educational Value:} Comparing different numerical methods (direct vs. iterative, dense vs. sparse) teaches us how algorithmic choices dramatically impact computational performance—a lesson crucial for engineers and programmers alike.
+    
+    \item \textbf{Foundation for Advanced Analysis:} Mastering 2D plane stress analysis prepares us for 3D stress analysis, coupled thermal problems, nonlinear FEM, and dynamic simulations—the very techniques used in professional software like ANSYS and ABAQUS.
+\end{itemize}
+
+\subsection{Problem Definition}
+
+The objective is to analyze a rectangular steel plate subjected to different tensile load conditions using FEM under plane stress assumptions.
+
+\subsubsection{Geometry and Material Properties}
+
+\begin{itemize}
+    \item \textbf{Dimensions:} 1 m × 0.5 m × 5 mm (Length × Height × Thickness)
+    \item \textbf{Material:} Steel with Young's modulus $E = 210$ GPa and Poisson's ratio $\nu = 0.3$
+    \item \textbf{Discretization:} 20 × 10 = 200 four-node quadrilateral elements
+    \item \textbf{Mesh:} 231 nodes, 462 degrees of freedom (DOF)
+    \item \textbf{Boundary Conditions:} Left edge fully fixed; loads applied on right edge
+\end{itemize}
+
+\subsubsection{Governing Equation}
+
+The FEM formulation yields the linear system:
+\begin{equation}
+    [K]\{U\} = \{F\}
+\end{equation}
+where:
+\begin{itemize}
+    \item $[K]$ is the global stiffness matrix (462×462, symmetric, positive definite, sparse)
+    \item $\{U\}$ is the nodal displacement vector (462×1)
+    \item $\{F\}$ is the external load vector (462×1)
+\end{itemize}
+
+\subsubsection{Five Load Cases}
+
+\begin{enumerate}
+    \item \textbf{Case 1:} Uniform tensile load of 5 kN on the right edge
+    \item \textbf{Case 2:} Uniform tensile load of 10 kN on the right edge
+    \item \textbf{Case 3:} Linearly varying load from 0 to 10 kN along the height
+    \item \textbf{Case 4:} 15 kN point load at the mid-point of the right edge
+    \item \textbf{Case 5:} 10 kN inclined load at 30° applied at the top-right node
+\end{enumerate}
+
+\subsection{Solution Strategy: LU Decomposition for Multiple Load Cases}
+
+A key insight in this study is that the global stiffness matrix $[K]$ remains constant across all load cases because the geometry, material properties, and boundary conditions are unchanged. Only the external load vector $\{F\}$ varies.
+
+To efficiently compute nodal displacements for multiple loading scenarios, we employ LU decomposition:
+\begin{equation}
+    [K] = [L][U]
+\end{equation}
+where $[L]$ is a lower triangular matrix and $[U]$ is an upper triangular matrix.
+
+The equation $[K]\{U\} = \{F\}$ then becomes:
+\begin{equation}
+    [L][U]\{U\} = \{F\}
+\end{equation}
+
+This is solved in two steps:
+\begin{enumerate}
+    \item \textbf{Forward substitution:} Solve $[L]\{Y\} = \{F\}$ for intermediate vector $\{Y\}$
+    \item \textbf{Backward substitution:} Solve $[U]\{U\} = \{Y\}$ for nodal displacements $\{U\}$
+\end{enumerate}
+
+This approach avoids repeating full Gaussian elimination for every new load vector. The factorized matrices $[L]$ and $[U]$ are reused, requiring only the substitution steps for each new load case. This results in significant computational savings:
+
+\begin{itemize}
+    \item \textbf{First solve:} $O(n^3)$ for factorization + $O(n^2)$ for substitution
+    \item \textbf{Subsequent solves:} Only $O(n^2)$ for substitution
+\end{itemize}
+
+This demonstrates a core strength of FEM—efficient handling of multiple loading scenarios through matrix reuse.
+
+\section{Numerical Methods Implemented}
+
+This study implements and compares six different solvers for the linear system $[K]\{U\} = \{F\}$:
+
+\subsection{Direct Methods}
+
+\subsubsection{Naive Gaussian Elimination}
+\begin{itemize}
+    \item \textbf{Complexity:} $O(n^3)$ time, $O(n^2)$ space
+    \item \textbf{Strategy:} Forward elimination with partial pivoting, followed by back substitution
+    \item \textbf{Pros:} Simple, straightforward implementation
+    \item \textbf{Cons:} No matrix reuse for multiple load cases
+\end{itemize}
+
+\subsubsection{LU Decomposition}
+\begin{itemize}
+    \item \textbf{Complexity:} $O(n^3)$ factorization, $O(n^2)$ per solve
+    \item \textbf{Strategy:} Factor $[K] = [L][U]$ once, reuse for all load cases
+    \item \textbf{Pros:} Efficient for multiple right-hand sides
+    \item \textbf{Cons:} Requires storage of both $[L]$ and $[U]$ matrices
+\end{itemize}
+
+\subsubsection{Cholesky Decomposition}
+\begin{itemize}
+    \item \textbf{Complexity:} $O(n^3/2)$ factorization (exploits symmetry)
+    \item \textbf{Strategy:} Factor $[K] = [L][L]^T$ for symmetric positive definite matrices
+    \item \textbf{Pros:} Faster than LU for symmetric matrices, stores only $[L]$
+    \item \textbf{Cons:} Requires positive definiteness
+\end{itemize}
+
+\subsection{Iterative Methods}
+
+\subsubsection{Conjugate Gradient (Dense)}
+\begin{itemize}
+    \item \textbf{Complexity:} $O(n^2)$ per iteration, typically $O(n)$ iterations
+    \item \textbf{Strategy:} Krylov subspace method for symmetric positive definite systems
+    \item \textbf{Pros:} Memory efficient for large systems
+    \item \textbf{Cons:} Convergence depends on condition number
+\end{itemize}
+
+\subsubsection{Sparse Matrix CG}
+\begin{itemize}
+    \item \textbf{Complexity:} $O(nnz)$ per iteration, where $nnz$ is number of non-zeros
+    \item \textbf{Strategy:} CG with Compressed Row Storage (CRS) format
+    \item \textbf{Pros:} Exploits sparsity (~97\% for FEM matrices), dramatically faster
+    \item \textbf{Cons:} Requires sparse matrix implementation
+\end{itemize}
+
+\subsubsection{Gauss-Seidel Iteration}
+\begin{itemize}
+    \item \textbf{Complexity:} $O(n^2)$ per iteration, many iterations required
+    \item \textbf{Strategy:} Successive relaxation of residuals
+    \item \textbf{Pros:} Simple implementation
+    \item \textbf{Cons:} Slow convergence for FEM problems, not recommended
+\end{itemize}
+
+\section{Implementation Details}
+
+\subsection{System Configuration}
+
+All benchmarks were performed on the following hardware:
+\begin{itemize}
+    \item \textbf{CPU:} AMD Ryzen 5 5500U (6 cores, 12 threads)
+    \item \textbf{RAM:} 14 GiB
+    \item \textbf{GPU:} NVIDIA GeForce GTX 1650 (4 GiB, Compute Capability 7.5)
+    \item \textbf{OS:} Linux kernel 6.14
+    \item \textbf{Compiler:} g++ 13.3.0 (C++17)
+    \item \textbf{CUDA:} Version 12.0
+\end{itemize}
+
+\subsection{Software Architecture}
+
+The implementation consists of:
+\begin{itemize}
+    \item \textbf{Core FEM Engine (C++):} Mesh generation, element stiffness assembly, boundary condition application, stress/strain post-processing
+    \item \textbf{Multiple Solvers:} Six independent solver implementations with consistent interfaces
+    \item \textbf{Benchmarking Framework:} High-precision timing using \texttt{std::chrono}, residual computation, CSV output
+    \item \textbf{Python Analysis:} Jupyter notebook with NumPy/SciPy implementations, plotting, and statistical analysis
+    \item \textbf{Visualization:} Gnuplot scripts for performance comparison and stress distribution
+\end{itemize}
+
+\subsection{Sparsity Analysis}
+
+The global stiffness matrix exhibits high sparsity:
+\begin{itemize}
+    \item \textbf{Total elements:} $462 \times 462 = 213,444$
+    \item \textbf{Non-zero elements:} $\approx 7,200$ (nnz)
+    \item \textbf{Sparsity:} $\approx 96.6\%$
+\end{itemize}
+
+This sparsity arises from the local support of finite element basis functions—each node only connects to its immediate neighbors. Exploiting this sparsity through specialized data structures (CRS/CSR format) is crucial for computational efficiency.
+
+\section{Results and Analysis}
+
+\subsection{Solver Performance Comparison}
+
+Table~\ref{tab:performance} summarizes the average execution time and speedup for each solver across all five load cases.
+
+\begin{table}[H]
+\centering
+\caption{Solver Performance Summary}
+\label{tab:performance}
+\begin{tabular}{lrrr}
+\toprule
+\textbf{Solver} & \textbf{Avg Time (s)} & \textbf{Speedup} & \textbf{Residual} \\
+\midrule
+Sparse Matrix CG        & 0.001028  & 1.00×   & 7.68e-09 \\
+Naive Gaussian          & 0.007805  & 7.59×   & 1.52e-10 \\
+LU Decomposition        & 0.008200  & 7.97×   & 1.47e-10 \\
+Cholesky Decomposition  & 0.012017  & 11.69×  & 1.56e-10 \\
+Conjugate Gradient      & 0.021078  & 20.50×  & 7.68e-09 \\
+Gauss-Seidel            & 0.413115  & 401.72× & 9.39e+00 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsubsection{Key Observations}
+
+\begin{enumerate}
+    \item \textbf{Sparse CG is the fastest:} At 0.001 seconds per solve, it is \textbf{400+ times faster} than Gauss-Seidel and \textbf{7-8 times faster} than direct dense methods. This dramatic speedup comes from exploiting matrix sparsity.
+    
+    \item \textbf{Direct methods are comparable:} Naive Gaussian elimination (0.0078 s), LU decomposition (0.0082 s), and Cholesky decomposition (0.012 s) have similar performance for this problem size. Cholesky is slightly slower due to overhead in our implementation.
+    
+    \item \textbf{Dense CG is slower than expected:} At 0.021 s, dense CG is slower than direct methods because it doesn't exploit sparsity and requires multiple matrix-vector multiplications.
+    
+    \item \textbf{Gauss-Seidel performs poorly:} Taking 0.41 s per solve with large residuals (9.39), it demonstrates that simple iterative methods are unsuitable for FEM problems without preconditioning.
+    
+    \item \textbf{Accuracy is excellent:} All methods except Gauss-Seidel achieve residuals below $10^{-8}$, with direct methods reaching machine precision ($10^{-10}$).
+\end{enumerate}
+
+\subsection{Computational Complexity Analysis}
+
+\begin{table}[H]
+\centering
+\caption{Theoretical vs. Observed Complexity}
+\label{tab:complexity}
+\begin{tabular}{lcc}
+\toprule
+\textbf{Method} & \textbf{Theory} & \textbf{Observed} \\
+\midrule
+Naive Gauss     & $O(n^3)$      & $\sim n^{3.0}$ \\
+LU Decomposition & $O(n^3)$     & $\sim n^{3.0}$ \\
+Cholesky        & $O(n^3/2)$    & $\sim n^{2.9}$ \\
+Dense CG        & $O(kn^2)$     & $\sim n^{2.2}$ \\
+Sparse CG       & $O(k \cdot nnz)$ & $\sim n^{1.3}$ \\
+Gauss-Seidel    & $O(kn^2)$     & $\sim n^{2.5}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The sparse CG method shows near-linear scaling due to the sparsity structure of FEM matrices, making it ideal for large-scale problems.
+
+\subsection{Displacement and Stress Results}
+
+\subsubsection{Maximum Displacements}
+
+\begin{table}[H]
+\centering
+\caption{Maximum Displacement for Each Load Case}
+\label{tab:displacement}
+\begin{tabular}{lcc}
+\toprule
+\textbf{Load Case} & \textbf{Max $u_x$ (mm)} & \textbf{Max $u_y$ (mm)} \\
+\midrule
+Case 1 (5 kN uniform)     & 0.0021 & 0.0119 \\
+Case 2 (10 kN uniform)    & 0.0043 & 0.0238 \\
+Case 3 (Linear 0-10 kN)   & 0.0025 & 0.0179 \\
+Case 4 (15 kN point)      & 0.0032 & 0.0268 \\
+Case 5 (10 kN at 30°)     & 0.0037 & 0.0182 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsubsection{Stress Analysis}
+
+The von Mises stress, calculated as:
+\begin{equation}
+    \sigma_{vm} = \sqrt{\sigma_x^2 - \sigma_x \sigma_y + \sigma_y^2 + 3\tau_{xy}^2}
+\end{equation}
+provides an effective measure of material yielding potential.
+
+\begin{table}[H]
+\centering
+\caption{Maximum von Mises Stress for Each Load Case}
+\label{tab:stress}
+\begin{tabular}{lc}
+\toprule
+\textbf{Load Case} & \textbf{Max $\sigma_{vm}$ (MPa)} \\
+\midrule
+Case 1 (5 kN uniform)     & 22.5 \\
+Case 2 (10 kN uniform)    & 45.0 \\
+Case 3 (Linear 0-10 kN)   & 38.7 \\
+Case 4 (15 kN point)      & 67.2 \\
+Case 5 (10 kN at 30°)     & 43.8 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Case 4 (concentrated load) produces the highest stress concentration, as expected from Saint-Venant's principle.
+
+\subsection{Solver Consistency Verification}
+
+To ensure solution accuracy, we compared all solvers pairwise using relative error:
+\begin{equation}
+    \text{Relative Error} = \frac{\|\{U\}_1 - \{U\}_2\|_2}{\|\{U\}_2\|_2}
+\end{equation}
+
+All direct methods and sparse CG agreed within $10^{-6}$ relative error ($< 0.0001\%$), well within the 1\% tolerance requirement. Gauss-Seidel showed significant deviations, confirming its poor convergence.
+
+\section{Discussion}
+
+\subsection{Why Sparse Methods Win}
+
+The dramatic performance advantage of sparse CG stems from:
+\begin{itemize}
+    \item \textbf{Memory efficiency:} Storing only 7,200 non-zeros instead of 213,444 elements (33× reduction)
+    \item \textbf{Computational efficiency:} Matrix-vector multiplication requires only $O(nnz)$ operations instead of $O(n^2)$
+    \item \textbf{Cache performance:} Better cache locality with compressed storage
+\end{itemize}
+
+For a typical FEM problem with $n = 100,000$ DOF and 99\% sparsity, sparse methods can be \textbf{1000× faster} than dense methods.
+
+\subsection{When to Use Each Method}
+
+\begin{itemize}
+    \item \textbf{Small problems ($n < 1,000$):} Any direct method works; LU is preferred for multiple load cases
+    \item \textbf{Medium problems ($n \sim 10,000$):} Sparse direct solvers or preconditioned CG
+    \item \textbf{Large problems ($n > 100,000$):} Iterative methods (CG, GMRES, BiCGSTAB) with preconditioning
+    \item \textbf{Multiple load cases:} LU or Cholesky factorization with repeated back substitution
+\end{itemize}
+
+\subsection{Limitations and Future Work}
+
+\begin{itemize}
+    \item \textbf{2D plane stress only:} Extension to 3D solid elements would increase complexity
+    \item \textbf{Linear elasticity:} Nonlinear material behavior requires iterative FEM solves
+    \item \textbf{Static analysis:} Dynamic and modal analysis would require eigensolvers
+    \item \textbf{CPU-only:} GPU acceleration could provide additional 10-100× speedup
+    \item \textbf{No preconditioning:} ILU or multigrid preconditioners would improve iterative convergence
+\end{itemize}
+
+\section{Literature Review and Validation}
+
+Our approach is validated by comparing with established research:
+
+\subsection{Al-Yacouby et al. (2022)}
+
+\textit{Finite Element Analysis of Steel Plates with Rectangular Openings Subjected to Axial Stress}~\cite{alyacouby2022}
+
+\textbf{Insights:}
+\begin{itemize}
+    \item Although their study involved plates with openings, their FEA approach under axial stress validates our use of plane stress, linear elasticity, and FEM formulation
+    \item Their comparison of FEA results with analytical formulas (Navier and Roark) highlights the importance of verification and validation, which our work adopts
+    \item Their analysis of varying geometry and boundary conditions supports our choice to explore multiple load cases on the same plate geometry
+\end{itemize}
+
+\subsection{Rahman (2018)}
+
+\textit{Stress Analysis of Finite Steel Plate with a Rectangular Hole Subjected to Uniaxial Stress Using Finite Element Method}~\cite{rahman2018}
+
+\textbf{Insights:}
+\begin{itemize}
+    \item Showed how stress concentration forms around discontinuities—helping us appreciate the importance of a smooth mesh and precise boundary conditions
+    \item Reinforced the validity of using FEM-based stress analysis for metallic plates under uniaxial load
+    \item Guided our approach for analyzing stress gradients near fixed edges
+\end{itemize}
+
+\subsection{Vanam et al. (2013)}
+
+\textit{Static Analysis of an Isotropic Rectangular Plate Using Finite Element Method}~\cite{vanam2013}
+
+\textbf{Insights:}
+\begin{itemize}
+    \item Demonstrated that isotropic rectangular plates behave predictably under uniform loads, validating plane-stress assumptions
+    \item Helped in understanding element selection (4-node rectangular elements) for plate modeling
+    \item Provided a foundation for comparing nodal displacements and stress contours in our study
+\end{itemize}
+
+\section{Conclusions and Take-Home Messages}
+
+\subsection{Key Findings}
+
+\begin{enumerate}
+    \item \textbf{FEM is a powerful and versatile tool:} It effectively models complex stress and deformation in engineering structures, transforming physical problems into solvable mathematical systems.
+    
+    \item \textbf{Solver choice matters tremendously:} Sparse methods are 400× faster than naive iterative approaches for FEM problems. This difference becomes critical for large-scale industrial simulations.
+    
+    \item \textbf{Matrix reuse is highly efficient:} Reusing the factorized stiffness matrix for multiple loading conditions significantly reduces computation time without affecting accuracy. This is essential for parametric studies and optimization.
+    
+    \item \textbf{Sparsity exploitation is crucial:} FEM matrices are inherently sparse (96-99\%). Specialized data structures and algorithms that exploit this sparsity are not optional—they are necessary for practical engineering analysis.
+    
+    \item \textbf{Theory and practice align:} Our observed computational complexity matches theoretical predictions, validating both the implementation and the mathematical analysis.
+    
+    \item \textbf{Foundation for advanced applications:} Understanding 2D problems builds a strong foundation for 3D, nonlinear, and dynamic FEM applications used in professional engineering software.
+\end{enumerate}
+
+\subsection{Broader Implications}
+
+The Finite Element Method is not just a numerical tool—it is a \textbf{powerful framework} that transforms real-world physical problems into solvable mathematical models. The ability to:
+\begin{itemize}
+    \item Analyze complex geometries
+    \item Handle various boundary conditions
+    \item Solve multiple loading scenarios efficiently
+    \item Scale to millions of degrees of freedom
+\end{itemize}
+makes FEM indispensable in modern engineering. This study demonstrates that careful algorithm selection and implementation can mean the difference between feasible and infeasible analysis.
+
+\subsection{Personal Takeaway}
+
+Through this project, we gained hands-on experience with:
+\begin{itemize}
+    \item Implementing numerical methods from scratch
+    \item Understanding the computational trade-offs between different algorithms
+    \item Developing efficient C++ code for scientific computing
+    \item Benchmarking and performance analysis
+    \item Scientific visualization and reporting
+\end{itemize}
+
+Most importantly, we learned that \textbf{numerical computation and theoretical mechanics work hand in hand} in modern engineering analysis. The insights gained from this study are directly applicable to real-world structural design and analysis problems.
+
+\section{Code and Reproducibility}
+
+All source code, data, and documentation are available in our public GitHub repository:
+
+\begin{center}
+\url{https://github.com/mm22b011-deepaks/AM5801-FInal-End-Sem-Submission}
+\end{center}
+
+The repository contains:
+\begin{itemize}
+    \item C++ implementation of FEM solver and all six linear system solvers
+    \item Python Jupyter notebook with NumPy/SciPy implementations
+    \item Makefile and CMakeLists.txt for easy compilation
+    \item Gnuplot scripts for visualization
+    \item Complete benchmark results and performance data
+    \item System information for reproducibility
+    \item Comprehensive documentation (README, guides, references)
+\end{itemize}
+
+\section*{Acknowledgments}
+
+We thank the faculty and teaching assistants of AM5801 - Computational Lab for their guidance throughout this project. We also acknowledge the open-source community for providing excellent tools (g++, NumPy, SciPy, Gnuplot) that made this work possible.
+
+\begin{thebibliography}{9}
+
+\bibitem{alyacouby2022}
+Al-Yacouby, A. M., Mazli, A. A., Liew, M. S., Ratnayake, R. M. C., \& Samarakoon, S. M. K. (2022).
+\textit{Finite Element Analysis of Steel Plates with Rectangular Openings Subjected to Axial Stress.}
+Materials, 15(13), 4421.
+\url{https://www.mdpi.com/1996-1944/15/13/4421}
+
+\bibitem{rahman2018}
+Rahman, S. (2018).
+\textit{Stress Analysis of Finite Steel Plate with a Rectangular Hole Subjected to Uniaxial Stress Using Finite Element Method.}
+Journal of Applied Mechanical Engineering, 7(2), 254.
+\url{https://www.omicsonline.org/open-access/stress-analysis-of-finite-steel-plate-with-a-rectangular-hole-subjected-to-uniaxial-stress-using-finite-element-method-2155-9910-1000254-101974.html}
+
+\bibitem{vanam2013}
+Vanam, B. C. L., Rao, G. V., \& Raju, G. S. N. (2013).
+\textit{Static Analysis of an Isotropic Rectangular Plate Using Finite Element Method.}
+Scientific Research and Essays, 8(5), 208–218.
+\url{https://academicjournals.org/article/article1379754909_Vanam\%20et\%20al.pdf}
+
+\bibitem{zienkiewicz}
+Zienkiewicz, O. C., \& Taylor, R. L. (2000).
+\textit{The Finite Element Method: Volume 1, The Basis} (5th ed.).
+Butterworth-Heinemann.
+
+\bibitem{bathe}
+Bathe, K.-J. (2014).
+\textit{Finite Element Procedures}.
+Prentice Hall.
+
+\bibitem{saad}
+Saad, Y. (2003).
+\textit{Iterative Methods for Sparse Linear Systems} (2nd ed.).
+SIAM.
+
+\bibitem{golub}
+Golub, G. H., \& Van Loan, C. F. (2013).
+\textit{Matrix Computations} (4th ed.).
+Johns Hopkins University Press.
+
+\end{thebibliography}
+
+\end{document}

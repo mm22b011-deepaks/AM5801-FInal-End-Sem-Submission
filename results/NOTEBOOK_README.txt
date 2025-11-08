@@ -1,0 +1,1 @@
+Run cells in order. Use small meshes for quick runs. Optional packages: cupy, numba, pyamg.
