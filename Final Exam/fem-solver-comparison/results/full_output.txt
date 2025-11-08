@@ -1,0 +1,814 @@
+
+╔════════════════════════════════════════════════════════════════════════════╗
+║                                                                            ║
+║         FINITE ELEMENT METHOD SOLVER COMPARISON & BENCHMARKING             ║
+║                    2D Plane Stress Analysis                                ║
+║                                                                            ║
+║  Problem: Rectangular Steel Plate under Various Loading Conditions        ║
+║  Authors: [Your Names Here]                                               ║
+║  Course: AM5801 - Computational Lab                                        ║
+║  Date: November 8, 2025                                                    ║
+║                                                                            ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+
+════════════════════════════════════════════════════════════════
+                     PROBLEM STATEMENT
+════════════════════════════════════════════════════════════════
+
+We analyze a 2D rectangular steel plate subjected to plane stress
+conditions using the finite element method. The plate is:
+  • Dimensions: 1.0 m × 0.5 m × 5 mm (Length × Height × Thickness)
+  • Material: Steel with E = 210 GPa, ν = 0.3
+  • Left edge: Fully fixed (u = v = 0)
+  • Right edge: Various loading conditions
+
+The plate is discretized using 4-node quadrilateral elements.
+We solve [K]{U} = {F} using multiple methods and compare their
+computational efficiency, accuracy, and convergence properties.
+
+════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════
+                     SOLUTION METHODS
+════════════════════════════════════════════════════════════════
+
+1. NAIVE GAUSSIAN ELIMINATION
+   • Direct method with partial pivoting
+   • Complexity: O(n³) for n×n system
+   • Best for: Small to medium systems, reference solution
+   • Drawback: Slow for large systems, modifies original matrix
+
+2. LU DECOMPOSITION
+   • Factorization: A = LU with partial pivoting
+   • Complexity: O(n³) decomposition, O(n²) per solve
+   • Best for: Multiple right-hand sides
+   • Advantage: Efficient for solving with same K
+
+3. CHOLESKY DECOMPOSITION
+   • Factorization: A = LL^T (for symmetric positive definite)
+   • Complexity: O(n³/2) - Half the operations of LU
+   • Best for: Symmetric systems (FEM stiffness matrices)
+   • Advantage: Most efficient direct method for SPD matrices
+
+4. CONJUGATE GRADIENT (CG)
+   • Iterative Krylov subspace method
+   • Complexity: O(kn²) for k iterations
+   • Best for: Large sparse systems
+   • Advantage: Low memory, good for well-conditioned matrices
+
+5. SPARSE MATRIX SOLVER (CG with CRS)
+   • Uses Compressed Row Storage format
+   • Complexity: O(k×nnz) for k iterations, nnz non-zeros
+   • Best for: Very large sparse systems
+   • Advantage: Minimal memory, exploits sparsity
+
+6. GAUSS-SEIDEL ITERATION
+   • Simple iterative method
+   • Complexity: O(kn²) for k iterations
+   • Best for: Well-conditioned diagonally dominant systems
+   • Advantage: Simple implementation, low memory
+
+════════════════════════════════════════════════════════════════
+
+
+════════════════════════════════════════════════════════════════
+                  FINITE ELEMENT ANALYSIS
+════════════════════════════════════════════════════════════════
+
+
+=== FEM MESH GENERATION ===
+Plate dimensions: 1 m x 0.5 m
+Mesh: 20 x 10 elements
+Material Properties:
+  E = 210 GPa
+  ν = 0.3
+  t = 5 mm
+Mesh generated: 231 nodes, 200 elements
+Total DOF: 462
+
+=== ASSEMBLING GLOBAL STIFFNESS MATRIX ===
+Progress: 1% Progress: 2% Progress: 3% Progress: 4% Progress: 5% Progress: 6% Progress: 7% Progress: 8% Progress: 9% Progress: 10% Progress: 11% Progress: 12% Progress: 13% Progress: 14% Progress: 15% Progress: 16% Progress: 17% Progress: 18% Progress: 19% Progress: 20% Progress: 21% Progress: 22% Progress: 23% Progress: 24% Progress: 25% Progress: 26% Progress: 27% Progress: 28% Progress: 29% Progress: 30% Progress: 31% Progress: 32% Progress: 33% Progress: 34% Progress: 35% Progress: 36% Progress: 37% Progress: 38% Progress: 39% Progress: 40% Progress: 41% Progress: 42% Progress: 43% Progress: 44% Progress: 45% Progress: 46% Progress: 47% Progress: 48% Progress: 49% Progress: 50% Progress: 51% Progress: 52% Progress: 53% Progress: 54% Progress: 55% Progress: 56% Progress: 57% Progress: 58% Progress: 59% Progress: 60% Progress: 61% Progress: 62% Progress: 63% Progress: 64% Progress: 65% Progress: 66% Progress: 67% Progress: 68% Progress: 69% Progress: 70% Progress: 71% Progress: 72% Progress: 73% Progress: 74% Progress: 75% Progress: 76% Progress: 77% Progress: 78% Progress: 79% Progress: 80% Progress: 81% Progress: 82% Progress: 83% Progress: 84% Progress: 85% Progress: 86% Progress: 87% Progress: 88% Progress: 89% Progress: 90% Progress: 91% Progress: 92% Progress: 93% Progress: 94% Progress: 95% Progress: 96% Progress: 97% Progress: 98% Progress: 99% Progress: 100%
+Global stiffness matrix assembled: 462 x 462
+
+=== BOUNDARY CONDITIONS ===
+Left edge (fixed): 11 nodes
+Right edge (loaded): 11 nodes
+
+
+================================================================================
+ANALYZING LOAD CASE: 5 kN Uniform Tensile Load
+================================================================================
+
+=== LOAD CASE: 5 kN Uniform Tensile Load ===
+Applied uniform tensile load: 5 kN
+Load per node: 454.545 N
+
+
+╔════════════════════════════════════════════════════╗
+║          BENCHMARKING SOLVER METHODS               ║
+╚════════════════════════════════════════════════════╝
+
+
+┌─────────────────────────────────────────────────┐
+│  Testing: Naive Gaussian Elimination            │
+└─────────────────────────────────────────────────┘
+
+=== NAIVE GAUSSIAN ELIMINATION ===
+System size: 462 x 462
+Solution computed successfully
+⏱  Execution time: 0.007586 seconds
+📊 Residual norm: 5.204716e-11
+
+┌─────────────────────────────────────────────────┐
+│  Testing: LU Decomposition                      │
+└─────────────────────────────────────────────────┘
+
+=== LU DECOMPOSITION ===
+System size: 462 x 462
+Solution computed successfully
+⏱  Execution time: 0.007714 seconds
+📊 Residual norm: 4.756605e-11
+
+┌─────────────────────────────────────────────────┐
+│  Testing: Cholesky Decomposition                │
+└─────────────────────────────────────────────────┘
+
+=== CHOLESKY DECOMPOSITION ===
+System size: 462 x 462
+Solution computed successfully
+⏱  Execution time: 0.011749 seconds
+📊 Residual norm: 5.388049e-11
+
+┌─────────────────────────────────────────────────┐
+│  Testing: Conjugate Gradient                    │
+└─────────────────────────────────────────────────┘
+
+=== CONJUGATE GRADIENT ===
+System size: 462 x 462
+Tolerance: 1.000000e-08, Max iterations: 10000
+Iteration 0, Residual: 1.404617e+03
+Converged at iteration 98
+Final residual: 5.604849e-09
+⏱  Execution time: 0.016039 seconds
+📊 Residual norm: 5.613504e-09
+
+┌─────────────────────────────────────────────────┐
+│  Testing: Sparse Matrix CG                      │
+└─────────────────────────────────────────────────┘
+
+=== SPARSE MATRIX SOLVER (CG) ===
+System size: 462 x 462
+Sparsity: 96.63%
+Non-zero elements: 7196
+Iteration 0, Residual: 1404.62
+Converged at iteration 98
+⏱  Execution time: 0.001151 seconds
+📊 Residual norm: 5.613504e-09
+
+┌─────────────────────────────────────────────────┐
+│  Testing: Gauss-Seidel Iteration                │
+└─────────────────────────────────────────────────┘
+
+=== GAUSS-SEIDEL ITERATIVE SOLVER ===
+System size: 462 x 462
+Iteration 0, Error: 1.531601e-06
+Iteration 100, Error: 2.532397e-07
+Iteration 200, Error: 1.349236e-07
+Iteration 300, Error: 7.185940e-08
+Iteration 400, Error: 3.827149e-08
+Iteration 500, Error: 2.038295e-08
+Iteration 600, Error: 1.085576e-08
+Converged at iteration 614
+⏱  Execution time: 0.093274 seconds
+📊 Residual norm: 9.478659e+00
+
+==========================================================================================
+SOLVER PERFORMANCE COMPARISON
+==========================================================================================
+Solver                               Time (s)        Speedup       Residual          Error
+------------------------------------------------------------------------------------------
+Naive Gaussian Elimination           0.007586          12.30x      5.205e-11      0.000e+00
+LU Decomposition                     0.007714          12.09x      4.757e-11      6.160e-16
+Cholesky Decomposition               0.011749           7.94x      5.388e-11      1.778e-14
+Conjugate Gradient                   0.016039           5.82x      5.614e-09      1.249e-13
+Sparse Matrix CG                     0.001151          81.05x      5.614e-09      1.249e-13
+Gauss-Seidel                         0.093274           1.00x      9.479e+00      2.063e-02
+==========================================================================================
+
+✓ FASTEST SOLVER: Sparse Matrix CG (0.001151 seconds)
+✓ PERFORMANCE IMPROVEMENT: 8005.0% faster than slowest method
+
+
+╔════════════════════════════════════════════════════╗
+║        STRESS/STRAIN ANALYSIS                      ║
+╚════════════════════════════════════════════════════╝
+
+
+=== COMPUTING ELEMENT STRESSES AND STRAINS ===
+Computed stresses for 200 elements
+
+=== STRESS/STRAIN STATISTICS ===
+Stress X (σx): 1.727 to 2.075 MPa
+Stress Y (σy): -0.011 to 0.440 MPa
+Max von Mises: 1.999 MPa
+Results exported to: results/stress_case1.dat
+Benchmark results exported to: results/benchmark_case1.dat
+
+
+================================================================================
+ANALYZING LOAD CASE: 10 kN Uniform Tensile Load
+================================================================================
+
+=== LOAD CASE: 10 kN Uniform Tensile Load ===
+Applied uniform tensile load: 10 kN
+Load per node: 909.091 N
+
+
+╔════════════════════════════════════════════════════╗
+║          BENCHMARKING SOLVER METHODS               ║
+╚════════════════════════════════════════════════════╝
+
+
+┌─────────────────────────────────────────────────┐
+│  Testing: Naive Gaussian Elimination            │
+└─────────────────────────────────────────────────┘
+
+=== NAIVE GAUSSIAN ELIMINATION ===
+System size: 462 x 462
+Solution computed successfully
+⏱  Execution time: 0.008588 seconds
+📊 Residual norm: 1.040943e-10
+
+┌─────────────────────────────────────────────────┐
+│  Testing: LU Decomposition                      │
+└─────────────────────────────────────────────────┘
+
+=== LU DECOMPOSITION ===
+System size: 462 x 462
+Solution computed successfully
+⏱  Execution time: 0.007720 seconds
+📊 Residual norm: 9.513209e-11
+
+┌─────────────────────────────────────────────────┐
+│  Testing: Cholesky Decomposition                │
+└─────────────────────────────────────────────────┘
+
+=== CHOLESKY DECOMPOSITION ===
+System size: 462 x 462
+Solution computed successfully
+⏱  Execution time: 0.011755 seconds
+📊 Residual norm: 1.077610e-10
+
+┌─────────────────────────────────────────────────┐
+│  Testing: Conjugate Gradient                    │
+└─────────────────────────────────────────────────┘
+
+=== CONJUGATE GRADIENT ===
+System size: 462 x 462
+Tolerance: 1.000000e-08, Max iterations: 10000
+Iteration 0, Residual: 2.809233e+03
+Converged at iteration 99
+Final residual: 6.679476e-09
+⏱  Execution time: 0.016529 seconds
+📊 Residual norm: 6.673469e-09
+
+┌─────────────────────────────────────────────────┐
+│  Testing: Sparse Matrix CG                      │
+└─────────────────────────────────────────────────┘
+
+=== SPARSE MATRIX SOLVER (CG) ===
+System size: 462 x 462
+Sparsity: 96.63%
+Non-zero elements: 7196
+Iteration 0, Residual: 2809.23
+Converged at iteration 99
+⏱  Execution time: 0.000717 seconds
+📊 Residual norm: 6.673469e-09
+
+┌─────────────────────────────────────────────────┐
+│  Testing: Gauss-Seidel Iteration                │
+└─────────────────────────────────────────────────┘
+
+=== GAUSS-SEIDEL ITERATIVE SOLVER ===
+System size: 462 x 462
+Iteration 0, Error: 3.063202e-06
+Iteration 100, Error: 5.064795e-07
+Iteration 200, Error: 2.698471e-07
+Iteration 300, Error: 1.437188e-07
+Iteration 400, Error: 7.654297e-08
+Iteration 500, Error: 4.076590e-08
+Iteration 600, Error: 2.171152e-08
+Iteration 700, Error: 1.156351e-08
+Converged at iteration 724
+⏱  Execution time: 0.110679 seconds
+📊 Residual norm: 9.479939e+00
+
+==========================================================================================
+SOLVER PERFORMANCE COMPARISON
+==========================================================================================
+Solver                               Time (s)        Speedup       Residual          Error
+------------------------------------------------------------------------------------------
+Naive Gaussian Elimination           0.008588          12.89x      1.041e-10      0.000e+00
+LU Decomposition                     0.007720          14.34x      9.513e-11      6.160e-16
+Cholesky Decomposition               0.011755           9.42x      1.078e-10      1.778e-14
+Conjugate Gradient                   0.016529           6.70x      6.673e-09      8.766e-14
+Sparse Matrix CG                     0.000717         154.29x      6.673e-09      8.766e-14
+Gauss-Seidel                         0.110679           1.00x      9.480e+00      1.039e-02
+==========================================================================================
+
+✓ FASTEST SOLVER: Sparse Matrix CG (0.000717 seconds)
+✓ PERFORMANCE IMPROVEMENT: 15329.2% faster than slowest method
+
+
+╔════════════════════════════════════════════════════╗
+║        STRESS/STRAIN ANALYSIS                      ║
+╚════════════════════════════════════════════════════╝
+
+
+=== COMPUTING ELEMENT STRESSES AND STRAINS ===
+Computed stresses for 200 elements
+
+=== STRESS/STRAIN STATISTICS ===
+Stress X (σx): 3.454 to 4.150 MPa
+Stress Y (σy): -0.021 to 0.880 MPa
+Max von Mises: 3.997 MPa
+Results exported to: results/stress_case2.dat
+Benchmark results exported to: results/benchmark_case2.dat
+
+
+================================================================================
+ANALYZING LOAD CASE: Linearly Varying Load (0 to 10 kN)
+================================================================================
+
+=== LOAD CASE: Linearly Varying Load (0 to 10 kN) ===
+Applied linearly varying load: 0 to 10 kN
+
+
+╔════════════════════════════════════════════════════╗
+║          BENCHMARKING SOLVER METHODS               ║
+╚════════════════════════════════════════════════════╝
+
+
+┌─────────────────────────────────────────────────┐
+│  Testing: Naive Gaussian Elimination            │
+└─────────────────────────────────────────────────┘
+
+=== NAIVE GAUSSIAN ELIMINATION ===
+System size: 462 x 462
+Solution computed successfully
+⏱  Execution time: 0.007954 seconds
+📊 Residual norm: 7.948405e-11
+
+┌─────────────────────────────────────────────────┐
+│  Testing: LU Decomposition                      │
+└─────────────────────────────────────────────────┘
+
+=== LU DECOMPOSITION ===
+System size: 462 x 462
+Solution computed successfully
+⏱  Execution time: 0.007509 seconds
+📊 Residual norm: 7.802665e-11
+
+┌─────────────────────────────────────────────────┐
+│  Testing: Cholesky Decomposition                │
+└─────────────────────────────────────────────────┘
+
+=== CHOLESKY DECOMPOSITION ===
+System size: 462 x 462
+Solution computed successfully
+⏱  Execution time: 0.011989 seconds
+📊 Residual norm: 9.487053e-11
+
+┌─────────────────────────────────────────────────┐
+│  Testing: Conjugate Gradient                    │
+└─────────────────────────────────────────────────┘
+
+=== CONJUGATE GRADIENT ===
+System size: 462 x 462
+Tolerance: 1.000000e-08, Max iterations: 10000
+Iteration 0, Residual: 1.608592e+03
+Iteration 100, Residual: 5.002388e+00
+Converged at iteration 163
+Final residual: 8.977305e-09
+⏱  Execution time: 0.026386 seconds
+📊 Residual norm: 8.981739e-09
+
+┌─────────────────────────────────────────────────┐
+│  Testing: Sparse Matrix CG                      │
+└─────────────────────────────────────────────────┘
+
+=== SPARSE MATRIX SOLVER (CG) ===
+System size: 462 x 462
+Sparsity: 96.63%
+Non-zero elements: 7196
+Iteration 0, Residual: 1608.59
+Iteration 100, Residual: 5.00
+Converged at iteration 163
+⏱  Execution time: 0.001041 seconds
+📊 Residual norm: 8.981739e-09
+
+┌─────────────────────────────────────────────────┐
+│  Testing: Gauss-Seidel Iteration                │
+└─────────────────────────────────────────────────┘
+
+=== GAUSS-SEIDEL ITERATIVE SOLVER ===
+System size: 462 x 462
+Iteration 0, Error: 1.829367e-06
+Iteration 100, Error: 2.748659e-07
+Iteration 200, Error: 1.531123e-07
+Iteration 300, Error: 9.273550e-08
+Iteration 400, Error: 6.494305e-08
+Iteration 500, Error: 5.297238e-08
+Iteration 600, Error: 4.747137e-08
+Iteration 700, Error: 4.427838e-08
+Iteration 800, Error: 4.189336e-08
+Iteration 900, Error: 3.982792e-08
+Iteration 1000, Error: 3.792587e-08
+Iteration 1100, Error: 3.613506e-08
+Iteration 1200, Error: 3.443590e-08
+Iteration 1300, Error: 3.281924e-08
+Iteration 1400, Error: 3.127950e-08
+Iteration 1500, Error: 2.981243e-08
+Iteration 1600, Error: 2.841434e-08
+Iteration 1700, Error: 2.708191e-08
+Iteration 1800, Error: 2.581200e-08
+Iteration 1900, Error: 2.460165e-08
+Iteration 2000, Error: 2.344806e-08
+Iteration 2100, Error: 2.234858e-08
+Iteration 2200, Error: 2.130065e-08
+Iteration 2300, Error: 2.030185e-08
+Iteration 2400, Error: 1.934990e-08
+Iteration 2500, Error: 1.844258e-08
+Iteration 2600, Error: 1.757780e-08
+Iteration 2700, Error: 1.675357e-08
+Iteration 2800, Error: 1.596800e-08
+Iteration 2900, Error: 1.521925e-08
+Iteration 3000, Error: 1.450562e-08
+Iteration 3100, Error: 1.382545e-08
+Iteration 3200, Error: 1.317717e-08
+Iteration 3300, Error: 1.255929e-08
+Iteration 3400, Error: 1.197039e-08
+Iteration 3500, Error: 1.140909e-08
+Iteration 3600, Error: 1.087412e-08
+Iteration 3700, Error: 1.036423e-08
+Converged at iteration 3775
+⏱  Execution time: 0.580169 seconds
+📊 Residual norm: 9.234754e+00
+
+==========================================================================================
+SOLVER PERFORMANCE COMPARISON
+==========================================================================================
+Solver                               Time (s)        Speedup       Residual          Error
+------------------------------------------------------------------------------------------
+Naive Gaussian Elimination           0.007954          72.94x      7.948e-11      0.000e+00
+LU Decomposition                     0.007509          77.26x      7.803e-11      4.237e-16
+Cholesky Decomposition               0.011989          48.39x      9.487e-11      2.983e-14
+Conjugate Gradient                   0.026386          21.99x      8.982e-09      1.018e-13
+Sparse Matrix CG                     0.001041         557.07x      8.982e-09      1.018e-13
+Gauss-Seidel                         0.580169           1.00x      9.235e+00      1.358e-01
+==========================================================================================
+
+✓ FASTEST SOLVER: Sparse Matrix CG (0.001041 seconds)
+✓ PERFORMANCE IMPROVEMENT: 55607.3% faster than slowest method
+
+
+╔════════════════════════════════════════════════════╗
+║        STRESS/STRAIN ANALYSIS                      ║
+╚════════════════════════════════════════════════════╝
+
+
+=== COMPUTING ELEMENT STRESSES AND STRAINS ===
+Computed stresses for 200 elements
+
+=== STRESS/STRAIN STATISTICS ===
+Stress X (σx): 0.094 to 3.793 MPa
+Stress Y (σy): -0.016 to 0.650 MPa
+Max von Mises: 3.614 MPa
+Results exported to: results/stress_case3.dat
+Benchmark results exported to: results/benchmark_case3.dat
+
+
+================================================================================
+ANALYZING LOAD CASE: 15 kN Concentrated Load at Midpoint
+================================================================================
+
+=== LOAD CASE: 15 kN Concentrated Load at Midpoint ===
+Applied concentrated load: 15 kN at midpoint
+Node ID: 125 at y = 0.250 m
+
+
+╔════════════════════════════════════════════════════╗
+║          BENCHMARKING SOLVER METHODS               ║
+╚════════════════════════════════════════════════════╝
+
+
+┌─────────────────────────────────────────────────┐
+│  Testing: Naive Gaussian Elimination            │
+└─────────────────────────────────────────────────┘
+
+=== NAIVE GAUSSIAN ELIMINATION ===
+System size: 462 x 462
+Solution computed successfully
+⏱  Execution time: 0.007398 seconds
+📊 Residual norm: 1.652037e-10
+
+┌─────────────────────────────────────────────────┐
+│  Testing: LU Decomposition                      │
+└─────────────────────────────────────────────────┘
+
+=== LU DECOMPOSITION ===
+System size: 462 x 462
+Solution computed successfully
+⏱  Execution time: 0.008477 seconds
+📊 Residual norm: 1.541871e-10
+
+┌─────────────────────────────────────────────────┐
+│  Testing: Cholesky Decomposition                │
+└─────────────────────────────────────────────────┘
+
+=== CHOLESKY DECOMPOSITION ===
+System size: 462 x 462
+Solution computed successfully
+⏱  Execution time: 0.011905 seconds
+📊 Residual norm: 1.536941e-10
+
+┌─────────────────────────────────────────────────┐
+│  Testing: Conjugate Gradient                    │
+└─────────────────────────────────────────────────┘
+
+=== CONJUGATE GRADIENT ===
+System size: 462 x 462
+Tolerance: 1.000000e-08, Max iterations: 10000
+Iteration 0, Residual: 1.132690e+04
+Iteration 100, Residual: 9.009159e-08
+Converged at iteration 104
+Final residual: 9.506041e-09
+⏱  Execution time: 0.017409 seconds
+📊 Residual norm: 9.524881e-09
+
+┌─────────────────────────────────────────────────┐
+│  Testing: Sparse Matrix CG                      │
+└─────────────────────────────────────────────────┘
+
+=== SPARSE MATRIX SOLVER (CG) ===
+System size: 462 x 462
+Sparsity: 96.63%
+Non-zero elements: 7196
+Iteration 0, Residual: 11326.90
+Iteration 100, Residual: 0.00
+Converged at iteration 104
+⏱  Execution time: 0.000797 seconds
+📊 Residual norm: 9.524881e-09
+
+┌─────────────────────────────────────────────────┐
+│  Testing: Gauss-Seidel Iteration                │
+└─────────────────────────────────────────────────┘
+
+=== GAUSS-SEIDEL ITERATIVE SOLVER ===
+System size: 462 x 462
+Iteration 0, Error: 1.463900e-05
+Iteration 100, Error: 8.424624e-07
+Iteration 200, Error: 4.488764e-07
+Iteration 300, Error: 2.390671e-07
+Iteration 400, Error: 1.273243e-07
+Iteration 500, Error: 6.781138e-08
+Iteration 600, Error: 3.611552e-08
+Iteration 700, Error: 1.923469e-08
+Iteration 800, Error: 1.024417e-08
+Converged at iteration 804
+⏱  Execution time: 0.129171 seconds
+📊 Residual norm: 9.526559e+00
+
+==========================================================================================
+SOLVER PERFORMANCE COMPARISON
+==========================================================================================
+Solver                               Time (s)        Speedup       Residual          Error
+------------------------------------------------------------------------------------------
+Naive Gaussian Elimination           0.007398          17.46x      1.652e-10      0.000e+00
+LU Decomposition                     0.008477          15.24x      1.542e-10      5.090e-16
+Cholesky Decomposition               0.011905          10.85x      1.537e-10      2.195e-14
+Conjugate Gradient                   0.017409           7.42x      9.525e-09      4.849e-14
+Sparse Matrix CG                     0.000797         162.10x      9.525e-09      4.849e-14
+Gauss-Seidel                         0.129171           1.00x      9.527e+00      6.212e-03
+==========================================================================================
+
+✓ FASTEST SOLVER: Sparse Matrix CG (0.000797 seconds)
+✓ PERFORMANCE IMPROVEMENT: 16110.5% faster than slowest method
+
+
+╔════════════════════════════════════════════════════╗
+║        STRESS/STRAIN ANALYSIS                      ║
+╚════════════════════════════════════════════════════╝
+
+
+=== COMPUTING ELEMENT STRESSES AND STRAINS ===
+Computed stresses for 200 elements
+
+=== STRESS/STRAIN STATISTICS ===
+Stress X (σx): -0.399 to 29.875 MPa
+Stress Y (σy): -2.077 to 12.780 MPa
+Max von Mises: 37.415 MPa
+Results exported to: results/stress_case4.dat
+Benchmark results exported to: results/benchmark_case4.dat
+
+
+================================================================================
+ANALYZING LOAD CASE: 10 kN Load at 30° (Top-Right Node)
+================================================================================
+
+=== LOAD CASE: 10 kN Load at 30° (Top-Right Node) ===
+Applied 10 kN load at 30° to horizontal
+Fx = 8660.254 N
+Fy = 5000.000 N
+
+
+╔════════════════════════════════════════════════════╗
+║          BENCHMARKING SOLVER METHODS               ║
+╚════════════════════════════════════════════════════╝
+
+
+┌─────────────────────────────────────────────────┐
+│  Testing: Naive Gaussian Elimination            │
+└─────────────────────────────────────────────────┘
+
+=== NAIVE GAUSSIAN ELIMINATION ===
+System size: 462 x 462
+Solution computed successfully
+⏱  Execution time: 0.007501 seconds
+📊 Residual norm: 3.574093e-10
+
+┌─────────────────────────────────────────────────┐
+│  Testing: LU Decomposition                      │
+└─────────────────────────────────────────────────┘
+
+=== LU DECOMPOSITION ===
+System size: 462 x 462
+Solution computed successfully
+⏱  Execution time: 0.009583 seconds
+📊 Residual norm: 3.574093e-10
+
+┌─────────────────────────────────────────────────┐
+│  Testing: Cholesky Decomposition                │
+└─────────────────────────────────────────────────┘
+
+=== CHOLESKY DECOMPOSITION ===
+System size: 462 x 462
+Solution computed successfully
+⏱  Execution time: 0.012689 seconds
+📊 Residual norm: 3.712375e-10
+
+┌─────────────────────────────────────────────────┐
+│  Testing: Conjugate Gradient                    │
+└─────────────────────────────────────────────────┘
+
+=== CONJUGATE GRADIENT ===
+System size: 462 x 462
+Tolerance: 1.000000e-08, Max iterations: 10000
+Iteration 0, Residual: 7.910430e+03
+Iteration 100, Residual: 1.615475e+01
+Converged at iteration 167
+Final residual: 7.492937e-09
+⏱  Execution time: 0.029027 seconds
+📊 Residual norm: 7.598640e-09
+
+┌─────────────────────────────────────────────────┐
+│  Testing: Sparse Matrix CG                      │
+└─────────────────────────────────────────────────┘
+
+=== SPARSE MATRIX SOLVER (CG) ===
+System size: 462 x 462
+Sparsity: 96.63%
+Non-zero elements: 7196
+Iteration 0, Residual: 7910.43
+Iteration 100, Residual: 16.15
+Converged at iteration 167
+⏱  Execution time: 0.001435 seconds
+📊 Residual norm: 7.598640e-09
+
+┌─────────────────────────────────────────────────┐
+│  Testing: Gauss-Seidel Iteration                │
+└─────────────────────────────────────────────────┘
+
+=== GAUSS-SEIDEL ITERATIVE SOLVER ===
+System size: 462 x 462
+Iteration 0, Error: 1.706450e-05
+Iteration 100, Error: 6.071049e-07
+Iteration 200, Error: 4.102155e-07
+Iteration 300, Error: 3.281944e-07
+Iteration 400, Error: 2.928118e-07
+Iteration 500, Error: 2.733740e-07
+Iteration 600, Error: 2.590638e-07
+Iteration 700, Error: 2.465780e-07
+Iteration 800, Error: 2.349664e-07
+Iteration 900, Error: 2.239590e-07
+Iteration 1000, Error: 2.134726e-07
+Iteration 1100, Error: 2.034734e-07
+Iteration 1200, Error: 1.939385e-07
+Iteration 1300, Error: 1.848479e-07
+Iteration 1400, Error: 1.761820e-07
+Iteration 1500, Error: 1.679217e-07
+Iteration 1600, Error: 1.600482e-07
+Iteration 1700, Error: 1.525438e-07
+Iteration 1800, Error: 1.453911e-07
+Iteration 1900, Error: 1.385737e-07
+Iteration 2000, Error: 1.320760e-07
+Iteration 2100, Error: 1.258829e-07
+Iteration 2200, Error: 1.199803e-07
+Iteration 2300, Error: 1.143544e-07
+Iteration 2400, Error: 1.089923e-07
+Iteration 2500, Error: 1.038816e-07
+Iteration 2600, Error: 9.901059e-08
+Iteration 2700, Error: 9.436796e-08
+Iteration 2800, Error: 8.994304e-08
+Iteration 2900, Error: 8.572559e-08
+Iteration 3000, Error: 8.170590e-08
+Iteration 3100, Error: 7.787470e-08
+Iteration 3200, Error: 7.422314e-08
+Iteration 3300, Error: 7.074281e-08
+Iteration 3400, Error: 6.742567e-08
+Iteration 3500, Error: 6.426407e-08
+Iteration 3600, Error: 6.125071e-08
+Iteration 3700, Error: 5.837866e-08
+Iteration 3800, Error: 5.564127e-08
+Iteration 3900, Error: 5.303225e-08
+Iteration 4000, Error: 5.054556e-08
+Iteration 4100, Error: 4.817547e-08
+Iteration 4200, Error: 4.591651e-08
+Iteration 4300, Error: 4.376348e-08
+Iteration 4400, Error: 4.171140e-08
+Iteration 4500, Error: 3.975555e-08
+Iteration 4600, Error: 3.789140e-08
+Iteration 4700, Error: 3.611467e-08
+Iteration 4800, Error: 3.442125e-08
+Iteration 4900, Error: 3.280723e-08
+Iteration 5000, Error: 3.126889e-08
+Iteration 5100, Error: 2.980269e-08
+Iteration 5200, Error: 2.840524e-08
+Iteration 5300, Error: 2.707331e-08
+Iteration 5400, Error: 2.580384e-08
+Iteration 5500, Error: 2.459389e-08
+Iteration 5600, Error: 2.344068e-08
+Iteration 5700, Error: 2.234154e-08
+Iteration 5800, Error: 2.129394e-08
+Iteration 5900, Error: 2.029547e-08
+Iteration 6000, Error: 1.934381e-08
+Iteration 6100, Error: 1.843678e-08
+Iteration 6200, Error: 1.757227e-08
+Iteration 6300, Error: 1.674831e-08
+Iteration 6400, Error: 1.596297e-08
+Iteration 6500, Error: 1.521447e-08
+Iteration 6600, Error: 1.450106e-08
+Iteration 6700, Error: 1.382110e-08
+Iteration 6800, Error: 1.317303e-08
+Iteration 6900, Error: 1.255534e-08
+Iteration 7000, Error: 1.196662e-08
+Iteration 7100, Error: 1.140550e-08
+Iteration 7200, Error: 1.087070e-08
+Iteration 7300, Error: 1.036097e-08
+Converged at iteration 7374
+⏱  Execution time: 1.152279 seconds
+📊 Residual norm: 9.236285e+00
+
+==========================================================================================
+SOLVER PERFORMANCE COMPARISON
+==========================================================================================
+Solver                               Time (s)        Speedup       Residual          Error
+------------------------------------------------------------------------------------------
+Naive Gaussian Elimination           0.007501         153.62x      3.574e-10      0.000e+00
+LU Decomposition                     0.009583         120.25x      3.574e-10      0.000e+00
+Cholesky Decomposition               0.012689          90.81x      3.712e-10      1.398e-14
+Conjugate Gradient                   0.029027          39.70x      7.599e-09      4.557e-14
+Sparse Matrix CG                     0.001435         802.82x      7.599e-09      4.557e-14
+Gauss-Seidel                         1.152279           1.00x      9.236e+00      2.855e-02
+==========================================================================================
+
+✓ FASTEST SOLVER: Sparse Matrix CG (0.001435 seconds)
+✓ PERFORMANCE IMPROVEMENT: 80181.6% faster than slowest method
+
+
+╔════════════════════════════════════════════════════╗
+║        STRESS/STRAIN ANALYSIS                      ║
+╚════════════════════════════════════════════════════╝
+
+
+=== COMPUTING ELEMENT STRESSES AND STRAINS ===
+Computed stresses for 200 elements
+
+=== STRESS/STRAIN STATISTICS ===
+Stress X (σx): -9.208 to 34.572 MPa
+Stress Y (σy): -1.550 to 16.165 MPa
+Max von Mises: 42.997 MPa
+Results exported to: results/stress_case5.dat
+Benchmark results exported to: results/benchmark_case5.dat
+
+
+╔════════════════════════════════════════════════════════════════════╗
+║                    ANALYSIS COMPLETE                               ║
+║                                                                    ║
+║  All results have been exported to the 'results/' directory.       ║
+║  Run the gnuplot scripts to generate visualization plots.         ║
+║                                                                    ║
+╚════════════════════════════════════════════════════════════════════╝
+

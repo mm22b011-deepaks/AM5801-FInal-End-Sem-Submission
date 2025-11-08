@@ -1,0 +1,11 @@
+FEM Solver Performance Summary
+================================================================================
+
+Solver                            Avg Time (s)    Speedup        Residual
+--------------------------------------------------------------------------------
+Sparse Matrix CG                      0.001028       1.00x       7.678e-09
+Naive Gaussian Elimination            0.007805       7.59x       1.516e-10
+LU Decomposition                      0.008200       7.97x       1.465e-10
+Cholesky Decomposition                0.012017      11.69x       1.563e-10
+Conjugate Gradient                    0.021078      20.50x       7.678e-09
+Gauss-Seidel                          0.413115     401.72x       9.391e+00

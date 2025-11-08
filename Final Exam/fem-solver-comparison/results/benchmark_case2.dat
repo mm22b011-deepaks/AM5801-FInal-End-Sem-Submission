@@ -1,0 +1,8 @@
+# Solver benchmark results
+# Solver Time(s) Memory(MB) Iterations Residual
+Naive Gaussian Elimination 0.00858816 1.62845 0 1.04094e-10
+LU Decomposition 0.00771994 1.62845 0 9.51321e-11
+Cholesky Decomposition 0.011755 1.62845 0 1.07761e-10
+Conjugate Gradient 0.0165286 0.0105743 0 6.67347e-09
+Sparse Matrix CG 0.000717335 0 0 6.67347e-09
+Gauss-Seidel 0.110679 0.00704956 0 9.47994
